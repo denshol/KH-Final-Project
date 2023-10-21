@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 다른 mapper와 중복되지 않도록 네임스페이스 기재 -->
+<mapper namespace="chat">
+    
+    
+    <insert id="addChatRoom">
+        INSERT INTO CHATROOM(C_IDX, ROOM_IDX, H_USERID, USERID, 
+        CREATE_DATE, H_NAME, USER_NAME, ROOM_NAME, CHAT_READ_USER, CHAT_READ_HOST)
+        VALUES (CHAT_ROOM_SEQ.NEXTVAL, #{room_idx}, #{h_userid}, #{userid}, 
+        #{create_date}, #{h_name}, #{user_name}, #{room_name}, 1, 1)
+    </insert>
+    
+    
+    <update id="updateFileName">
+        UPDATE CHATROOM
+        SET FILENAME = #{fileName}
+        WHERE C_IDX = ${c_idx}
+    </update>
+    
+    <select id="countByChatId" resultType="int">
+        SELECT COUNT(*)
+        FROM CHATROOM
+        WHERE ROOM_IDX = #{room_idx} and USERID=#{userid}
+    </select>
+    
+    <select id="getChatRoomIdx" resultType="int">
+        SELECT C_IDX 
+        FROM CHATROOM
+        WHERE ROOM_IDX = #{room_idx} and USERID=#{userid}
+    </select>
+    
+    <select id="findByChatInfo" resultType="ChatRoomDTO">
+        SELECT 
+        C.C_IDX,
+        C.ROOM_IDX,
+        C.H_USERID,
+        C.USERID,
+        C.FILENAME,
+        C.CREATE_DATE,
+        C.H_NAME,
+        C.USER_NAME,
+        C.CHAT_READ_USER,
+        C.CHAT_READ_HOST,
+        C.ROOM_NAME,
+        RP.PHOTO1
+        FROM CHATROOM C JOIN ROOM_PHOTO RP ON C.ROOM_IDX = RP.ROOM_IDX
+        WHERE C.ROOM_IDX =#{room_idx} AND   USERID = #{userid}
+    </select>
+    
+    <update id="updateChatReadUser">
+        UPDATE CHATROOM
+        SET CHAT_READ_USER = #{chat_read_user}
+        WHERE C_IDX= #{c_idx}
+    </update>
+    
+    <update id="updateChatReadHost">
+        UPDATE CHATROOM
+        SET CHAT_READ_HOST = #{chat_read_host}
+        WHERE C_IDX= #{c_idx}
+    </update>
+    
+    <select id="getUnreadMessages" resultType="int">
+        SELECT COUNT(C_IDX)
+        FROM CHATROOM
+        WHERE (USERID=#{userid} AND CHAT_READ_USER=0) OR 
+        (H_USERID=#{userid} AND CHAT_READ_HOST=0)
+    </select>
+    
+    <select id="findByUserId" resultType="ChatListDTO">
+        SELECT * FROM CHATROOM C 
+        JOIN ROOM_PHOTO RP ON C.ROOM_IDX = RP.ROOM_IDX
+        WHERE USERID = #{userid} OR H_USERID = #{userid}
+    </select>
+    
+    <select id="getUnreadChatRoom" resultType="int">
+        SELECT C_IDX
+        FROM CHATROOM
+        WHERE (USERID=#{userid} AND CHAT_READ_USER=0) OR 
+        (H_USERID=#{userid} AND CHAT_READ_HOST=0)
+    </select>
+    
+    <select id="findByReadCheck" resultType="ChatRoomDTO">
+        SELECT CHAT_READ_USER, CHAT_READ_HOST 
+        FROM CHATROOM 
+        WHERE C_IDX=#{c_idx}
+    </select>
+    
+    <!-- 게스트별 채팅 건수  -->
+    <select id="countByUser" resultType="int">
+        SELECT COUNT(*) 
+        FROM CHATROOM 
+        WHERE USERID=#{userid}
+    </select>
+
+    <!-- 채팅리스트 갯수 -->
+    <select id="getChatRoomCount" resultType="int">
+        SELECT COUNT(*) FROM CHATROOM 
+        WHERE (H_USERID=#{sessionId} OR USERID=#{sessionId})
+            AND (ROOM_NAME LIKE #{keyword} OR USERID LIKE #{keyword} 
+            OR H_USERID LIKE #{keyword} OR H_NAME LIKE #{keyword} 
+            OR USER_NAME LIKE #{keyword})
+    </select>
+    
+    <!-- 채팅리스트 -->
+    <select id="getChatRoomList" resultType="ChatListDTO">
+    SELECT * FROM(
+        SELECT A.*, ROWNUM AS RN FROM(
+            SELECT * FROM
+            CHATROOM C JOIN ROOM_PHOTO RP ON C.ROOM_IDX = RP.ROOM_IDX
+            WHERE (H_USERID=#{sessionId} OR USERID=#{sessionId})
+            AND (ROOM_NAME LIKE #{keyword} OR USERID LIKE #{keyword} 
+            OR H_USERID LIKE #{keyword} OR H_NAME LIKE #{keyword} 
+            OR USER_NAME LIKE #{keyword})
+            ORDER BY CHAT_READ_HOST ASC, CREATE_DATE DESC
+        ) A
+    ) WHERE RN BETWEEN #{start} AND #{end}
+    </select>
+    
+    <!-- 호스트 프로필 사진 경로 찾기 -->
+    <select id="findByHostProfile" resultType="String">
+        SELECT H_PROFILE_IMG FROM HOST 
+        WHERE H_USERID=#{h_userid}
+    </select>   
+    
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
